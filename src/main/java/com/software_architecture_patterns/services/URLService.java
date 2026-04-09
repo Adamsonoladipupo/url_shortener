@@ -2,8 +2,13 @@ package com.software_architecture_patterns.services;
 
 import com.software_architecture_patterns.data.models.URL;
 import com.software_architecture_patterns.data.repositories.URLRepository;
+import com.software_architecture_patterns.dtos.requests.ShortCodeRequestDto;
+import com.software_architecture_patterns.dtos.requests.UrlRequestDto;
+import com.software_architecture_patterns.dtos.responses.ShortCodeResponseDto;
+import com.software_architecture_patterns.dtos.responses.UrlResponseDto;
 import com.software_architecture_patterns.exceptons.NonExistingShortCodeException;
 import com.software_architecture_patterns.utils.CodeGenerator;
+import com.software_architecture_patterns.utils.Mappers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,28 +19,24 @@ public class URLService {
     @Autowired
     private URLRepository urlRepository;
 
-    public String shortUrl(String originalUrl){
-        if (urlRepository.existsByOriginalUrl(originalUrl)){
-            URL oldUrl = urlRepository.findByOriginalUrl(originalUrl);
-            return oldUrl.getShortCode();
+    public ShortCodeResponseDto shortUrl(UrlRequestDto requestDto){
+        if (urlRepository.existsByOriginalUrl(requestDto.getOriginalUrl())){
+            URL oldUrl = urlRepository.findByOriginalUrl(requestDto.getOriginalUrl());
+            return Mappers.shortCodeResponse(oldUrl);
         }
 
-        String newShortCode = CodeGenerator.generate();
-        if(urlRepository.existsByShortCode(newShortCode)){
-            newShortCode = CodeGenerator.generate();
+        URL newUrl = Mappers.urlRequest(requestDto);
+        if(urlRepository.existsByShortCode(newUrl.getShortCode())){
+            newUrl = Mappers.urlRequest(requestDto);
         }
-        URL newUrl = new URL();
-        newUrl.setOriginalUrl(originalUrl);
-        newUrl.setShortCode(newShortCode);
-        newUrl.setCreatedAt(LocalDateTime.now());
         urlRepository.save(newUrl);
-        return newShortCode;
+        return Mappers.shortCodeResponse(newUrl);
     }
 
-    public String getOriginalUrl(String shortCode){
-        if(urlRepository.existsByShortCode(shortCode)){
-            URL oldUrl = urlRepository.findByShortCode(shortCode);
-            return oldUrl.getOriginalUrl();
+    public UrlResponseDto getOriginalUrl(ShortCodeRequestDto requestDto){
+        if(urlRepository.existsByShortCode(requestDto.getShortCode())){
+            URL oldUrl = urlRepository.findByShortCode(requestDto.getShortCode());
+            return Mappers.urlResponse(oldUrl);
         }
         else throw new NonExistingShortCodeException("Sorry, this short code does not exist");
     }
